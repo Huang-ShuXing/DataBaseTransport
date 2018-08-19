@@ -1,4 +1,4 @@
-package com.maywide.bi;
+package com.maywide.dbt;
 
 import com.maywide.dbt.core.execute.TableTransport;
 import org.junit.Test;
