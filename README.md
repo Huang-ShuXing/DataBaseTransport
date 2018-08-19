@@ -8,3 +8,6 @@ JDK >= 1.8
 Maven  
 oracle jar包问题,maven 可能加载不下oracle的jar包，需要的需要自行添加
 
+# 开始运行
+运行Application方法  
+调用DataBaseController的接口方法即可
