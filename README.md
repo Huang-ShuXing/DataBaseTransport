@@ -1,6 +1,5 @@
 # DataBaseTransport
-Oracle数据库迁移至MySQL数据库;支持一对多数据库；纯JAVA,直接运行；基于springBoot，SringMvc,JdbcTemplate，数据库实时动态切换
-
+数据迁移;Oracle迁移至MySQL（MySql也可互迁）;支持一对多数据库,表结构,表数据独立迁移；去IOE；纯JAVA,直接运行；基于SpringBoot,SringMvc,Spring-Jdbc，多数据源，数据库实时动态切换
 
 # 环境
 JDK >= 1.8  
