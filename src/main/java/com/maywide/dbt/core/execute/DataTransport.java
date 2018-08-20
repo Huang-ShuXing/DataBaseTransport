@@ -27,14 +27,17 @@ import java.util.concurrent.atomic.AtomicLong;
 public class DataTransport {
 
     private static final Logger log = LoggerFactory.getLogger(DataTransport.class);
-    public static final int WORK_QUE_SIZE = 200;
+    public static final int WORK_QUE_SIZE = 3000;
     public static final int BATCH_PAGESIZE = 5000;
 
     public static ConcurrentHashMap<String,JSONObject> successMap = new ConcurrentHashMap<>();
 
     private static  final AtomicLong along = new AtomicLong(0);
 
-    public static ThreadPoolExecutor dataCopyPoolExecutor = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2 + 1, Runtime.getRuntime().availableProcessors() * 3 + 1, 30, TimeUnit.SECONDS,
+//    public static ThreadPoolExecutor dataCopyPoolExecutor = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2 + 1, Runtime.getRuntime().availableProcessors() * 3 + 1, 30, TimeUnit.SECONDS,
+//            new LinkedBlockingDeque<>(DataTransport.WORK_QUE_SIZE),new ThreadPoolExecutor.CallerRunsPolicy());
+
+    public static ThreadPoolExecutor dataCopyPoolExecutor = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 10 + 1, Runtime.getRuntime().availableProcessors() * 15+ 1, 30, TimeUnit.SECONDS,
             new LinkedBlockingDeque<>(DataTransport.WORK_QUE_SIZE),new ThreadPoolExecutor.CallerRunsPolicy());
 
     @Autowired
@@ -49,7 +52,7 @@ public class DataTransport {
 
     public void startCopyData(String oriDatasource,String schema,List<String> targetDBlist,String tableName ){
         if(null == targetDBlist || targetDBlist.isEmpty()){
-            log.info("targetDBlist 为空 ");
+            log.error("targetDBlist 为空 ");
             return ;
         }
         successMap = new ConcurrentHashMap<>();
@@ -63,7 +66,7 @@ public class DataTransport {
     private class CopyTableDataWork implements Runnable {
         private AtomicInteger  ai  = new AtomicInteger(0);
         private long all_data = 0;
-        private long startTime = System.currentTimeMillis();
+//        private long startTime = System.currentTimeMillis();
         private String oriDatasource;
         private String schema;
         //private String targetDatasource;
@@ -95,25 +98,29 @@ public class DataTransport {
                 String sourceSql = "select * from "+schema+"."+tableName;
                 int count = jdbcUtilServices.count(oriDatasource,sourceSql);
                 log.info("统计出 数据库【"+oriDatasource+"】的数据总数【"+count+"】,即将插入目标数据库【"+JSON.toJSONString(targetDBlist)+"】的表【"+tableName+"】");
+
                 int pageSize =DataTransport.BATCH_PAGESIZE;
                 all_data = count;
                 //3.复制数据到指定表（多线程)
                 if(count > pageSize){
                     int totalPageNum = (count  +  pageSize  - 1) / pageSize;
+                    log.error("统计出 数据库【"+oriDatasource+"】的数据总数【"+count+"】,每页["+pageSize+"],总共["+totalPageNum+"]页,即将插入目标数据库【"+JSON.toJSONString(targetDBlist)+"】的表【"+tableName+"】");
                     int start = 0;
                     int end = 0;
                     for (int i = 0; i < totalPageNum; i++) {
-                        log.info("数据="+(i+1)*pageSize);
+                        log.debug("数据="+(i+1)*pageSize);
                         start = (i)*pageSize;
                         // end = (i+1)*pageSize;
                         // mysql 的分页 String sql = sourceSql +" limit " + i * pageSize + "," + 1 * pageSize;
                         // oracle 的分页
                         String dbProductName =tableTransport.getDbName(oriDatasource);
                         String sql = SqlUtil.pageSql(dbProductName,sourceSql,start,pageSize);
-                        log.info("分页 sql : "+ sql);
+                        log.debug("分页 sql : "+ sql);
                         dataCopyPoolExecutor.execute(new CopyDataInWork(sql));
                     }
                 }else {
+                    log.error("统计出 数据库【"+oriDatasource+"】的数据总数【"+count+"】,每页["+pageSize+"],总共[1]页,即将插入目标数据库【"+JSON.toJSONString(targetDBlist)+"】的表【"+tableName+"】");
+
                     dataCopyPoolExecutor.execute(new CopyDataInWork(sourceSql));
                 }
             }catch (SQLException e){
@@ -139,7 +146,7 @@ public class DataTransport {
             @Override
             public void run() {
 
-                log.info("线程 {"+Thread.currentThread().getName()+"},"+ JSON.toJSONString(DataTransport.dataCopyPoolExecutor));
+                //log.info("线程 {"+Thread.currentThread().getName()+"},"+ JSON.toJSONString(DataTransport.dataCopyPoolExecutor));
                 //1.根据源库和findSql  查询数据
                 DbContextHolder.setDBType(oriDatasource);
                 List<Map<String, Object>> valueList = springJdbcTemplate.queryForList(findSql);
@@ -158,14 +165,15 @@ public class DataTransport {
                 // TODO 单个目标库 jdbcUtilServices.batchInsert(targetDatasource,tableName,valueList);
                 int nowSuc = ai.addAndGet(valueList.size());
                 for (String targetDb : targetDBlist) {
+                    long startTime = System.currentTimeMillis();
                     jdbcUtilServices.batchInsert(targetDb,tableName,valueList);
                     log.info("表{"+tableName+"} 从 库{"+ oriDatasource +"} 到 目标库{" +targetDb+"} 目标的成功数为 "+nowSuc);
-                    log.info("写统计信息---开始");
+                    log.debug("写统计信息---开始");
                     JSONObject oneResult = new JSONObject();
                     oneResult.put("spend_time",(System.currentTimeMillis() - startTime)/1000);
                     oneResult.put("deal_count",nowSuc);
                     successMap.put(targetDb+"."+tableName,oneResult);
-                    log.info("写统计信息---完成");
+                    log.debug("写统计信息---完成");
                 }
             }
         }

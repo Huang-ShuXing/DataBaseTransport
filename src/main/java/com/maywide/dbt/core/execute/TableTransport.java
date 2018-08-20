@@ -41,6 +41,7 @@ public class TableTransport {
             try {
                 ((ResultSet)o).close();
             } catch (SQLException e) {
+                log.error(e.getMessage(),e);
                 e.printStackTrace();
             }
         } else if(o instanceof Statement){
@@ -48,6 +49,7 @@ public class TableTransport {
                 ((Statement)o).close();
             } catch (SQLException e) {
                 e.printStackTrace();
+                log.error(e.getMessage(),e);
             }
         } else if (o instanceof Connection){
             Connection c = (Connection)o;
@@ -57,6 +59,7 @@ public class TableTransport {
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
+                log.error(e.getMessage(),e);
             }
         }
     }
@@ -100,6 +103,7 @@ public class TableTransport {
             }
         } catch (SQLException e){
             e.printStackTrace();
+            log.error(e.getMessage(),e);
         } finally{
             TableTransport.close(rs,conn);
         }
@@ -158,6 +162,7 @@ public class TableTransport {
             }
         }catch (SQLException e){
             e.printStackTrace();
+            log.error(e.getMessage(),e);
         } finally{
             TableTransport.close(rs,conn);
         }
@@ -219,6 +224,7 @@ public class TableTransport {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            log.error(e.getMessage(),e);
         } finally{
             TableTransport.close(rs,conn);
         }
@@ -254,6 +260,7 @@ public class TableTransport {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            log.error(e.getMessage(),e);
         } finally{
             TableTransport.close(rs,conn);
         }
@@ -606,6 +613,7 @@ public class TableTransport {
             }
         }catch (SQLException e){
             e.printStackTrace();
+            log.error(e.getMessage(),e);
         }finally{
             TableTransport.close(rs,conn);
         }
@@ -674,6 +682,7 @@ public class TableTransport {
             }
         } catch (SQLException e){
             e.printStackTrace();
+            log.error(e.getMessage(),e);
         } finally{
             TableTransport.close(rs,conn);
         }
@@ -821,6 +830,7 @@ public class TableTransport {
             dbProductName = conn.getMetaData().getDatabaseProductName();
         }catch (SQLException e){
             e.printStackTrace();
+            log.error(e.getMessage(),e);
         }finally{
             TableTransport.close(conn);
         }

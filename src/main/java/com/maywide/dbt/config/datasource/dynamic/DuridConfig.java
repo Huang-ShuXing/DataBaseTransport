@@ -9,6 +9,8 @@ import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.Properties;
+
 @Configuration
 public class DuridConfig {
 
@@ -60,5 +62,10 @@ public class DuridConfig {
         //添加不需要忽略的格式信息.
         filterRegistrationBean.addInitParameter("exclusions","*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*");
         return filterRegistrationBean;
+    }
+
+    @ConfigurationProperties(prefix = "spring.datasource")
+    public static Properties getProperties(){
+        return new Properties();
     }
 }

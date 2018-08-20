@@ -2,14 +2,22 @@ package com.maywide.dbt.config.datasource.dynamic;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import org.apache.commons.lang.StringUtils;
+import org.hibernate.annotations.AttributeAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 import org.springframework.jdbc.datasource.lookup.JndiDataSourceLookup;
 
+import javax.annotation.Resource;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,6 +37,7 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
 
     public static final List<String> otherDataSource = new ArrayList<>();
 
+
     @Autowired
     private Environment env ;
     /**
@@ -43,7 +52,7 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
         } else {
             this.selectDataSource(dataSourceName);
         }
-        log.info("--------> use datasource " + dataSourceName);
+        log.debug("--------> use datasource " + dataSourceName);
         return dataSourceName;
     }
 
@@ -101,12 +110,8 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
     }
 
 
-
     /**
      * 到数据库中查找名称为dataSourceName的数据源
-     *
-     * @author Geloin
-     * @date Jan 20, 2014 12:15:41 PM
      * @param dataSourceName
      */
     private void selectDataSource(String dataSourceName) {
@@ -139,21 +144,36 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
         this.setTargetDataSources(this._targetDataSources);
     }
 
-    private DataSource createDataSource(String driverClassName, String url,
+//    @Bean
+//    @ConfigurationProperties(prefix="spring.datasource")
+//    public DruidDataSource getMyDataSource(){
+//        return new DruidDataSource();
+//    }
+
+    public DataSource createDataSource(String driverClassName, String url,
                                         String username, String password,String dataSourceName) {
-        DruidDataSource dataSource = new DruidDataSource();
+        DruidDataSource dataSource = new DruidDataSource();//(DruidDataSource) getMyDataSource();
+        dataSource.configFromPropety(DuridConfig.getProperties());
         dataSource.setName(dataSourceName);
         dataSource.setDriverClassName(driverClassName);
         dataSource.setUrl(url);
         dataSource.setUsername(username);
         dataSource.setPassword(password);
         try {
+            System.out.println(env.getProperty("spring.datasource.","initial-size"));
+            System.out.println(env.getProperty("spring.datasource.initial-size"));
             dataSource.setFilters("stat,wall");
-            dataSource.setMaxActive(50);
-            dataSource.setMinIdle(10);
+            dataSource.setMaxActive(80);
+            dataSource.setMinIdle(30);
             dataSource.setInitialSize(5);
+            dataSource.setTestOnBorrow(true);
+            dataSource.setValidationQuery("select 1 from dual");
+            dataSource.setMaxWait(10000);
+            dataSource.setTestWhileIdle(true);
+            dataSource.setTimeBetweenEvictionRunsMillis(18800);
         } catch (SQLException e) {
             e.printStackTrace();
+            log.error(e.getMessage(),e);
         }
         //dataSource.setInitialSize(5);
         return dataSource;
@@ -221,9 +241,6 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
 
     /**
      * 将已存在的数据源存储到内存中
-     *
-     * @author Geloin
-     * @date Jan 20, 2014 12:24:13 PM
      * @param dataSourceName
      * @param dataSource
      */
@@ -241,4 +258,7 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
         DataSource determineTargetDataSource = this.determineTargetDataSource();
         return determineTargetDataSource==null ? this : determineTargetDataSource;
     }
+
+
+
 }

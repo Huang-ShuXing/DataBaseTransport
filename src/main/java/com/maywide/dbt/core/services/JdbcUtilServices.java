@@ -189,6 +189,7 @@ public class JdbcUtilServices {
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
+                log.error(e.getMessage(),e);
             }
 
         }
